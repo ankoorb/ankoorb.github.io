@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+
+	<style>
+	path {
+		stroke: #fff;
+		stroke-width: 0.25px;
+		fill: steelblue}
+		
+	h2 {font-family: sans-serif}
+	
+	</style>
+
+
+
+
+	<head>
+		<title>D3 Tutorial </title>
+		<script src = 'http://d3js.org/d3.v3.min.js'></script>
+		<script src = 'http://d3js.org/topojson.v1.min.js'></script>
+	</head>
+	
+	<body>
+	
+	<h2>Location of Farmers Market in the U.S.</h2>
+	
+	<script>
+		
+	var width = 1200
+	var height = 900
+	
+	// set projection
+	var projection = d3.geo.mercator()
+	
+	// create path variable
+	var path = d3.geo.path()
+		.projection(projection)
+		
+	d3.json('us_topo.json', function(topo){
+	
+		//console.log(topo)
+		
+		states = topojson.feature(topo, topo.objects.states).features
+		//console.log(states)
+		
+		// set projection parameters
+		projection.scale(1000)
+			.center([-100, 41]) // centering map
+			
+		// create svg variable
+		var svg = d3.select('body').append('svg')
+			.attr('width', width)
+			.attr('height', height)
+			
+		/*// point test
+		sf = [-122.4330745, 37.7641413]
+		la = [-118.256, 34.0058]
+		console.log(projection(sf), projection(la))*/
+		
+		// add states from topojson
+		svg.selectAll('path')
+			.data(states)
+			.enter()
+			.append('path')
+			.attr('class', 'feature')
+			.style('fill', 'steelblue')
+			.attr('d', path)
+		
+		d3.csv('farmers.csv', function(data){
+		
+		svg.selectAll('circle')
+			.data(data)
+			.enter()
+			.append('circle')
+			.attr('cx', function(d){return projection([d.lon, d.lat])[0]})
+			.attr('cy', function(d){return projection([d.lon, d.lat])[1]})
+			.attr('r', 1)
+			.style('fill', 'red')
+		
+		})
+			
+	
+
+	})
+	
+	</script>
+	
+	
+	</body>
+
+</html>
