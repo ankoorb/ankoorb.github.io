@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+
+	<style>
+		
+	h2 {font-family: sans-serif}
+	p {font-family: sans-serif}
+	
+	body {font: 12px sans-serif}
+
+	.axis path,
+	.axis line {fill: none;
+  				stroke: #000;
+  				stroke-width: 1;
+  				shape-rendering: crispEdges}
+
+
+	.line {fill: none;
+  		   stroke: steelblue;
+  		   stroke-width: 2px}
+  		   
+  	.d3-tip {line-height: 1;
+  			font-weight: bold;
+  			font-size: 8pt;
+  			padding: 12px;
+  			background: rgba(0, 0, 0, 0.75);
+  			color: #fff;
+  			border-radius: 2px;
+			}
+	
+	
+	</style>
+
+
+
+
+	<head>
+		<title>D3 Interactive Line Plot </title>
+		<script src = 'http://d3js.org/d3.v3.min.js'></script>
+		<script src= 'd3.tip.js'></script>
+	</head>
+	
+	<body>
+	
+	<h2>Los Angeles Crime/Day (2013): Interactive Line Plot</h2>
+	<p>(2013 LAPD Data)</p>
+	
+	
+	<script>
+	
+	// Ref-1: http://bl.ocks.org/mbostock/3883245
+	// Ref-2: http://bl.ocks.org/d3noob/2e224baa7472c5e9e0e8
+	// Ref-3: https://github.com/Caged/d3-tip
+	
+	// set the dimensions of plot	
+	var margin = {top: 20, right: 20, bottom: 80, left: 50};
+	var width = 800 - margin.left - margin.right;
+	var height = 400 - margin.top - margin.bottom;
+	
+	// parsing date: API Reference > Time > Time Formatting
+	var parseDate = d3.time.format("%m/%d/%y").parse;
+	
+	// set range: 
+	
+	// API Reference > Time > Time Scales
+	var x = d3.time.scale()
+		.range([0, width]);
+	
+	var y = d3.scale.linear()
+		.range([height, 0]);
+	
+	// define x axis	
+	var xAxis = d3.svg.axis()
+		.scale(x)
+		.orient("bottom");
+	
+	// define y axis	
+	var yAxis = d3.svg.axis()
+		.scale(y)
+		.orient("left");
+	
+	// define line: API Reference > SVG > SVG Shapes	
+	var line = d3.svg.line()
+		.x(function(d) {return x(d.date)})
+		.y(function(d) {return y(d.count)});
+		
+	// add SVG	
+	var svg = d3.select("body").append("svg")
+		.attr("width", width + margin.right + margin.left)
+		.attr("height", height + margin.top + margin.bottom)
+	  		.append("g")
+			.attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+			
+
+			
+	// get data
+	d3.csv("LA_Crime.csv", function(error, data) {
+		if (error) throw error;
+		
+		// parse data: array.ForEach - Call a function for each element in the array
+		data.forEach(function(d) {
+			d.date = parseDate(d.date);
+			d.count = +d.count;
+			})
+		
+		// scale range of the data
+		//// d3.extent(array[, accessor]) - Returns the array's minimum and maximum value 
+		x.domain(d3.extent(data, function(d){return d.date;}))
+		y.domain(d3.extent(data, function(d){return d.count;}))
+		
+		
+		// add the x axis
+		svg.append("g")
+			.attr("class", "x axis")
+			.attr("transform", "translate(0," + height + ")")
+			.call(xAxis)
+			.selectAll("text")
+      		.style("text-anchor", "end")
+      		.attr("transform", "rotate(-90)")
+      		.attr("y", -3)
+      		.attr("x", -10);
+		
+		// add the y axis	
+		svg.append("g")
+      		.attr("class", "y axis")
+      		.call(yAxis)
+    		.append("text") // add text to y axis
+      			.attr("transform", "rotate(-90)")
+      			.attr("y", 6)
+      			.attr("dy", ".71em")
+      			.style("text-anchor", "end")
+      			.text("Crime Count");
+
+		// add line path
+  		svg.append("path")
+      		.datum(data)
+      		.attr("class", "line")
+      		.attr("d", line);
+      		
+      	// add tooltip
+      	var tip = d3.tip()
+  			.attr('class', 'd3-tip')
+  			.offset([0,0])
+  			.html(function(d) {return String(d.date).slice(0,16) + ": " + d.count;
+  			})
+		svg.call(tip);
+      		
+      	// add dot
+      	var dots = svg.selectAll("dot")
+      		.data(data)
+			.enter().append("circle")
+      		.attr("r", 2)
+      		
+  		dots.transition().duration(1000)
+      		.attr("cx", function(d){return x(d.date)})
+      		.attr("cy", function(d){return y(d.count)})
+      		
+  		dots.on("mouseover", tip.show)
+    		.on("mouseout", tip.hide)
+    		      	
+	})
+		
+	
+	</script>
+	
+	
+	</body>
+
+</html>
