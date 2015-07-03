@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+
+	<style>
+
+		
+	.states {fill: none;
+  			stroke: #fff;}
+  			
+  	.legend {font-size: 12px;}
+		
+	h2 {font-family: sans-serif}
+	
+	body {font-family: sans-serif}
+	
+	div.tooltip {position: absolute;           
+  			text-align: center;           
+  			width: 100px;                  
+  			height: 25px;                 
+  			padding: 2px; 
+  			font-weight: bold;            
+  			font-size: 10px;
+  			color: #fff;     
+  			background: rgba(0,0,0,0.75);
+  			border: 1px;      
+  			border-radius: 2px;           
+  			pointer-events: none;} 
+	
+	</style>
+
+
+
+	<head>
+		<title>U.S. Obesity Map </title>
+		<script src = 'http://d3js.org/d3.v3.min.js'></script>
+		<script src="http://d3js.org/queue.v1.min.js"></script>
+		<script src = 'http://d3js.org/topojson.v1.min.js'></script>
+		<script src= 'tooltip.js'></script>
+	</head>
+	
+	<body>
+	<button type="button" id="change">Change Projection</button>
+	
+	<h2>Obesity in the U.S.</h2>
+	
+	<script>
+	
+	// Ref: http://bl.ocks.org/rveciana/5181105
+	// Ref: http://bl.ocks.org/mbostock/9943478
+	// Ref: http://bl.ocks.org/KoGor/5685876
+	// Ref: http://www.cartographicperspectives.org/index.php/journal/article/view/cp78-sack-et-al/1359
+	// Ref: http://duckpond.wesleyan.edu/2013/11/15/mapping-congressional-tweets-in-d3/
+	// Colors: http://www.color-hex.com/
+		
+	var width = 960
+	var height = 500
+	var states // defined outside draw for transition purpose
+	
+	// set color domains (intervals of values) for map
+	var color_domain = [22.5, 25, 27.5, 30, 32.5, 35]
+	
+	var color = d3.scale.threshold()
+		.domain(color_domain)
+		.range(["#fee5d9", "#fcbba1", "#fc9272", "#fb6a4a", "#ef3b2c", "#cb181d", "#99000d"])
+
+	
+	// set projection
+	var projection = d3.geo.mercator()
+		.center([-97, 37])
+		.scale(5000 / 2/ Math.PI)
+		.translate([width/2, height/2])
+	
+	// create path variable
+	var path = d3.geo.path()
+		.projection(projection)
+		
+	// div for tooltip
+	var div = d3.select("body").append("div")   
+  		.attr("class", "tooltip")               
+  		.style("opacity", 0);
+
+		
+		
+	// svg
+	var svg = d3.select('body')
+		.append('svg')
+		.attr('width', width)
+		.attr('height', height)
+		
+	queue()
+		.defer(d3.json, 'us.json')
+		.defer(d3.csv, 'obesity.csv')
+		.await(draw);
+		
+	function draw(error, us, obesity){
+		if (error) throw error;
+		
+	var rateByID = {}
+	var nameByID = {}
+		
+	obesity.forEach(function(d) {
+			rateByID[d.id] = + d.obesity;
+			nameByID[d.id] = d.name;
+			})
+	
+	/*states = svg.append('path')
+		.attr('class', 'states')
+		.datum(topojson.feature(us, us.objects.states))
+		.attr('d', path);*/
+		
+	states = svg.append('g')
+		.attr('class', 'states')
+		.selectAll('path')
+		.data(topojson.feature(us, us.objects.states).features)		
+		.enter()
+			.append('path')
+			.attr('d', path)
+			.style('fill', function(d){return color(rateByID[d.id])})
+			.style('opacity', 1)
+			// call tooltip helper	
+			.call(d3.helper.tooltip(function(d, i){
+				return "<b>"+ nameByID[d.id] + "</b><br/>Obesity: " + rateByID[d.id] + "%";
+			}))
+	
+	}
+	
+	//// Change Button (inside body tab): <button type="button" id="change">Change</button>
+	// change projection using button
+	d3.select('#change').on('click', function(){
+		projection = d3.geo.albers();
+		path.projection(projection);
+		states.transition() // transition states
+			.duration(5000) 
+			.attr('d', path)
+		})
+
+	
+	
+	
+	//Adding legend for our Choropleth
+	
+	var color_domain = [22.5, 25, 27.5, 30, 32.5, 35]
+	var ext_color_domain = [0, 22.5, 25, 27.5, 30, 32.5, 35]
+  	var legend_labels = ["< 22.5%", "22.5% +", "25% +", "27.5% +", "30% +", "32.5% +", "> 35%"]              
+
+  	var legend = svg.selectAll("g.legend")
+  		.data(ext_color_domain)
+  		.enter().append("g")
+  		.attr("class", "legend");
+
+  	var ls_w = 20, ls_h = 20;
+
+  	legend.append("rect")
+  		.attr("x", 20)
+  		.attr("y", function(d, i){ return height - (i*ls_h) - 2*ls_h;})
+  		.attr("width", ls_w)
+  		.attr("height", ls_h)
+  		.style("fill", function(d, i) { return color(d); })
+  		.style("opacity", 0.8);
+
+  	legend.append("text")
+  		.attr("x", 50)
+  		.attr("y", function(d, i){ return height - (i*ls_h) - ls_h - 4;})
+  		.text(function(d, i){ return legend_labels[i]; });
+
+	
+	
+
+	</script>
+	
+	
+	</body>
+
+</html>
