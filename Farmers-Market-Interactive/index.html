@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+
+	<style>
+	
+	path {
+		stroke: #fff;
+		stroke-width: 0.5px;
+		fill: steelblue}
+		
+	h2 {font-family: sans-serif}
+	
+	.states {stroke: #fff;}
+  			
+	.states :hover {fill: orange;}
+  			
+  	.legend {font-size: 12px;}
+		
+	h2 {font-family: sans-serif}
+	
+	body {font-family: sans-serif}
+	
+	div.tooltip {position: absolute;           
+  			text-align: left;           
+  			width: 150px;                  
+  			height: 35px;                 
+  			padding: 2px; 
+  			font-weight: bold;            
+  			font-size: 10px;
+  			color: #fff;     
+  			background: rgba(0,0,0,0.75);
+  			border: 1px;      
+  			border-radius: 2px;           
+  			pointer-events: none;} 
+	
+	</style>
+
+
+
+
+	<head>
+		<title>Farmers Market in the U.S.</title>
+		<script src = 'http://d3js.org/d3.v3.min.js'></script>
+		<script src="http://d3js.org/queue.v1.min.js"></script>
+		<script src = 'http://d3js.org/topojson.v1.min.js'></script>
+		<script src= 'tooltip.js'></script>
+	</head>
+	
+	<body>
+	
+	<h2>Farmers Market in the U.S. (Interactive Map)</h2>
+	
+	<script>
+	// Ref: http://bl.ocks.org/mbostock/4090848
+		
+	var width = 1200
+	var height = 1000
+	
+		
+	// set projection
+	var projection = d3.geo.albersUsa()
+		.scale(9000 / 2/ Math.PI)
+		//.scale(1300)
+		.translate([width/2, height/3])
+	
+	// create path variable
+	var path = d3.geo.path()
+		.projection(projection)
+		
+	// div for tooltip
+	var div = d3.select("body").append("div")   
+  		.attr("class", "tooltip")               
+  		.style("opacity", 0);
+
+
+	// svg
+	var svg = d3.select('body')
+		.append('svg')
+		.attr('width', width)
+		.attr('height', height)
+		
+		
+	queue()
+		.defer(d3.json, 'us_topo.json')
+		.defer(d3.csv, 'states.csv')
+		.defer(d3.csv, 'farmers.csv')
+		.await(draw);
+		
+	function draw(error, us, states, farmers){
+		if (error) throw error;
+		
+	var marketByID = {}
+	var popByID = {}
+	var nameByID = {}
+		
+	states.forEach(function(d) {
+			marketByID[d.id] = + d.markets;
+			popByID[d.id] = + d.popPerMkt;
+			nameByID[d.id] = d.name;
+			})
+	
+		
+	states = svg.append('g')
+		.attr('class', 'states')
+		.selectAll('path')
+		.data(topojson.feature(us, us.objects.states).features)		
+		.enter()
+			.append('path')
+			.attr('d', path)
+			.style('fill', 'steelblue')
+			.style('opacity', 1)
+			// call tooltip helper	
+			.call(d3.helper.tooltip(function(d, i){
+				return "<b>"+ nameByID[d.id] + "</b><br/>Farmers Market: " + marketByID[d.id] + 
+				"</b><br/>Population Per Market: " + popByID[d.id];
+			}))
+
+	// Ref: http://gis.stackexchange.com/questions/34769/how-can-i-render-latitude-longitude-coordinates-on-a-map-with-d3	
+	svg.selectAll('circle')
+		.data(farmers)
+		.enter()
+		.append('circle')
+		.attr('transform', function(d){return "translate(" + projection([d.lon, d.lat]) +')'})
+		.attr('r', 1)
+		.style('fill', 'red')
+				
+	}
+		
+	
+	
+	</script>
+	
+	
+	</body>
+
+</html>
