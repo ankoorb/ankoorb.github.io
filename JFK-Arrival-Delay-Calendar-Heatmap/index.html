@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+body {
+  font: 14px sans-serif;
+  shape-rendering: crispEdges;
+}
+
+.day {
+  fill: #fff;
+  stroke: #ccc;
+}
+
+.month {
+  fill: none;
+  stroke: #000;
+  stroke-width: 2px;
+}
+
+.RdYlBu .q0-11{fill:rgb(165,0,38)}
+.RdYlBu .q1-11{fill:rgb(215,48,39)}
+.RdYlBu .q2-11{fill:rgb(244,109,67)}
+.RdYlBu .q3-11{fill:rgb(253,174,97)}
+.RdYlBu .q4-11{fill:rgb(254,224,144)}
+.RdYlBu .q5-11{fill:rgb(255,255,191)}
+.RdYlBu .q6-11{fill:rgb(224,243,248)}
+.RdYlBu .q7-11{fill:rgb(171,217,233)}
+.RdYlBu .q8-11{fill:rgb(116,173,209)}
+.RdYlBu .q9-11{fill:rgb(69,117,180)}
+.RdYlBu .q10-11{fill:rgb(49,54,149)}
+
+
+</style>
+
+
+
+
+	<head>
+		<title>JFK Delays </title>
+		<script src = 'http://d3js.org/d3.v3.min.js'></script>
+	</head>
+	
+	<body>
+	
+	<h1>JFK Arrival Delay (2014): Interactive Calendar Heatmap</h1>
+	<h4>Hover over the cells to find out the percent of arriving flights that were delayed by more than 15 minutes</h4>
+	
+	<p>
+	
+		<ul>
+		  <li>Delays in Winter: January and February (Snowfall in NYC)</li>
+		  <li>Delays in Summer: July (More visitors in Summer)</li>
+		</ul>
+		
+	</p>
+	
+	
+	<script>
+	
+	// Ref-1: http://bl.ocks.org/mbostock/4063318
+	// Ref-2: http://stackoverflow.com/questions/20520944/create-a-calendar-grid-of-the-last-365-days
+	// Ref-3: http://bl.ocks.org/mhska/5333055
+	// Ref-4: http://www.askjohnobiee.com/2013/06/how-to-data-visualization-with-external.html
+	// Ref-5: http://bl.ocks.org/mbostock/5577023
+
+
+var width = 1200,
+    height = 200,
+    cellSize = 22; // cell size
+
+var percent = d3.format(".1%"),
+    format = d3.time.format("%Y-%m-%d");
+
+var color = d3.scale.quantize()
+    .domain([0.75, 0]) // Reverse the color domain to show higher color as red
+    .range(d3.range(11).map(function(d) { return "q" + d + "-11"; }));
+
+var svg = d3.select("body").selectAll("svg")
+    .data(d3.range(2014, 2015))
+  .enter().append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .attr("class", "RdYlBu")
+  .append("g")
+    .attr("transform", "translate(" + ((width - cellSize * 53) / 2) + "," + (height - cellSize * 7 - 1) + ")");
+
+svg.append("text")
+    .attr("transform", "translate(-6," + cellSize * 3.5 + ")rotate(-90)")
+    .style("text-anchor", "middle")
+    .text(function(d) { return d; });
+
+var rect = svg.selectAll(".day")
+    .data(function(d) { return d3.time.days(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
+  .enter().append("rect")
+    .attr("class", "day")
+    .attr("width", cellSize)
+    .attr("height", cellSize)
+    .attr("x", function(d) { return d3.time.weekOfYear(d) * cellSize; })
+    .attr("y", function(d) { return d.getDay() * cellSize; })
+    .datum(format);
+
+rect.append("title")
+    .text(function(d) { return d; });
+
+svg.selectAll(".month")
+    .data(function(d) { return d3.time.months(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
+  .enter().append("path")
+    .attr("class", "month")
+    .attr("d", monthPath);
+
+d3.csv("JFK_Delays.txt", function(error, csv) {
+  if (error) throw error;
+
+  var data = d3.nest()
+    .key(function(d) { return d.FL_DATE; })
+    .rollup(function(d) { return d[0].ARR_DEL15 / d[0].ARR_FLIGHTS; })
+    .map(csv);
+
+  rect.filter(function(d) { return d in data; })
+      .attr("class", function(d) { return "day " + color(data[d]); })
+    .select("title")
+      .text(function(d) { return d + ": " + percent(data[d]); });
+});
+
+function monthPath(t0) {
+  var t1 = new Date(t0.getFullYear(), t0.getMonth() + 1, 0),
+      d0 = t0.getDay(), w0 = d3.time.weekOfYear(t0),
+      d1 = t1.getDay(), w1 = d3.time.weekOfYear(t1);
+  return "M" + (w0 + 1) * cellSize + "," + d0 * cellSize
+      + "H" + w0 * cellSize + "V" + 7 * cellSize
+      + "H" + w1 * cellSize + "V" + (d1 + 1) * cellSize
+      + "H" + (w1 + 1) * cellSize + "V" + 0
+      + "H" + (w0 + 1) * cellSize + "Z";
+}
+
+d3.select(self.frameElement).style("height", "2910px");
+	
+	</script>
+	
+	
+	</body>
+
+</html>
