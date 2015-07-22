@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Simple Table</title>
+  <script src="http://d3js.org/d3.v3.min.js"></script>
+
+  <style>
+
+    h3 {font-family: Verdana;}
+
+    table {
+      border-collapse: collapse;
+      border: 1px black solid;
+      font: 12px Verdana;
+      padding: 5px;
+    }
+
+    caption {font-weight: bold;
+      font: 16 px Verdana;}
+            
+    thead {
+      border: 1px black solid;
+      padding: 5 px;
+    }
+
+    td {
+      border: 1px black solid;
+      padding: 15 px;
+    }
+
+  </style>
+</head>
+<body>
+
+  <h3>Simple Table (with row highlight)</h3>
+
+
+  <script>
+
+  // http://bl.ocks.org/romsson/900783b4eca5304b1970
+  // http://bl.ocks.org/ndarville/7075823
+  // http://christopheviau.com/d3_tutorial/
+  // http://bl.ocks.org/mbostock/3719724
+
+  d3.csv('fars.csv', function(error, fars){
+    if (error) throw error;
+
+    // get column names 
+    var columns = Object.keys(fars[0]) // any index less than length will work
+
+    console.log(columns)
+
+    // table -> head and body
+    var table = d3.select('body')
+      .append('table')
+
+    // table head -> thead
+    var thead = table.append('thead')
+      .attr('class', 'thead')
+
+    // table body -> tbody
+    var tbody = table.append('tbody')
+
+    // table caption
+    table.append('caption')
+      .html('Fatality Analysis Reporting System (2013) Data: Fatality Summary')
+
+    // append table row to table head -> column names
+    thead.append('tr')
+     .selectAll('th')
+     .data(columns)
+     .enter()
+     .append('th')
+     // column text
+      .text(function(d){return d;})
+
+    // append table rows 'tr' to table body 
+    var rows = tbody.selectAll('tr')
+      .data(fars)
+      .enter()
+      .append('tr')
+      // highlight row
+      .on('mouseover', function(){d3.select(this).style('background-color', '#a1d99b')})
+      .on('mouseout', function(){d3.select(this).style('background-color', '#ffffff')})
+
+
+    // append table data 'td' to table rows -> filling table cells with data: the tricky part!!!
+    var cells = rows.selectAll('td')
+      .data(function(row){
+        return d3.range(Object.keys(row).length).map(function(column, i) {
+          return row[Object.keys(row)[i]]
+        });
+      })
+      .enter()
+      .append('td')
+      // data text
+      .text(function(d){return d;})
+      .style('text-align', 'center')
+      
+
+  })
+  </script>
+</body>
+</html>
