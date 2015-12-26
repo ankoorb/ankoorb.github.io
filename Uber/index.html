@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="d3/d3.min.js"></script>
+    <style type="text/css">
+body {
+  font: 14px sans-serif;
+}
+    
+svg {
+  font: 10px sans-serif;
+}
+
+.area {
+  fill: #FDEB56;
+  clip-path: url(#clip);
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+ 
+  shape-rendering: optimizeQuality;
+}
+
+.brush .extent {
+  stroke: red;
+  fill-opacity: .1;
+  shape-rendering: optimizeQuality;
+}
+
+text.instructions {
+  font-size: 16px;
+}
+
+    </style>
+  </head>
+
+  <body>
+	  
+
+    <h1>UBER Pickups in NYC (January 2015 - June 2015)</h1>
+    <h3>Interactive Visualization of 14.3 Million Pickups</h3>
+    <h5>Data Source: <a href="https://github.com/fivethirtyeight/uber-tlc-foil-response">FiveThirtyEight</a></h5>
+
+
+    <script type="text/javascript">
+
+    // Ref[1]: http://bl.ocks.org/timelyportfolio/5c136de85de1c2abb6fc
+    // Ref[2]: http://bl.ocks.org/mbostock/1667367
+
+      // -------------------------------------------------------------------------
+      // Set focus margin, width and height
+      var margin = {top: 10, bottom: 150, left: 100, right: 10};
+      var width = 1200 - margin.left - margin.right;
+      var height = 600 - margin.top - margin.bottom;
+	  
+	    // Set context margin and height
+	    var contextMargin = {top: 475, bottom: 50, left: 100, right: 10};
+	    var contextHeight = 600 - contextMargin.top - contextMargin.bottom;
+
+      console.log('width: ' + width);
+      console.log('height: ' + height);
+      console.log('contextHeight: ' + contextHeight);
+
+      // -------------------------------------------------------------------------
+      // Set x scale (time)
+      var xScale = d3.time.scale().range([0, width]); // Pixel
+      var xContextScale = d3.time.scale().range([0, width]); // Pixel
+
+      // Set y scale
+      var yScale = d3.scale.linear().range([height, 0]);
+      var yContextScale = d3.scale.linear().range([contextHeight, 0]);
+
+
+      // -------------------------------------------------------------------------
+      // Sex x axis
+      var xAxis = d3.svg.axis().scale(xScale).orient('bottom');
+      var xContextAxis = d3.svg.axis().scale(xContextScale).orient('bottom');
+
+      // set y axis
+      var yAxis = d3.svg.axis().scale(yScale).orient('left');
+
+
+      // -------------------------------------------------------------------------
+      // Create svg container and set width and height attributes
+      var svg = d3.select('body')
+                  .append('svg')
+                  .attr('width', width + margin.left + margin.right)
+                  .attr('height', height + margin.top + margin.bottom);
+
+      // -------------------------------------------------------------------------
+      // Create focus area generator
+      var focusArea = d3.svg.area()
+                        .interpolate('monotone')
+                        .x(function(d){return xScale(d.date)})
+                        .y0(height)
+                        .y1(function(d){return yScale(d.pickups)});
+
+      // Create context area generator
+      var contextArea = d3.svg.area()
+                        .interpolate('monotone')
+                        .x(function(d){return xContextScale(d.date)})
+                        .y0(contextHeight)
+                        .y1(function(d){return yContextScale(d.pickups)});
+
+      // -------------------------------------------------------------------------
+      // Group and transform the coordinate space: focus
+      var focus = svg.append('g')
+                    .attr('class', 'focus') // create a css .class selector named 'focus'
+                    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+      // Group and transform the coordinate space: context
+      var context = svg.append('g')
+                      .attr('class', 'context') // create a css .class selector named 'context'
+                      .attr('transform', 'translate(' + contextMargin.left + ',' + contextMargin.top + ')');
+
+      // -------------------------------------------------------------------------
+      /* Establish svg's viewport by specifying width and height of the area of interest.
+         This becomes clipping area: Anything drawn outside this will not be displayed.
+         Clippling area is established with the element <clipPath> */
+
+      svg.append('defs').append('clipPath')
+         .attr('id', 'clip') // create an #id selector named 'clip'
+         .append('rect') // define shape of clip path to be rectangle
+         .attr('width', width) // specify rectangle width
+         .attr('height', height); // specify rectangle height
+
+      // -------------------------------------------------------------------------
+      // Create a brush and function brushed 
+      var brush = d3.svg.brush()
+                    .x(xContextScale) // Set x scale associated with the brush
+                    .on('brush', brushed); // Set the listner for event 'brush'
+
+      // Brushed
+      function brushed(){
+        /* Check if 'brush' extent is empty, if it is empty then set focus x scale domain 
+        as context x scale domain, else set focus x scale doman as extent of brush*/
+        xScale.domain(brush.empty() ? xContextScale.domain(): brush.extent());
+        focus.select('.area').attr('d', focusArea); // ?
+        focus.select('.x.axis').call(xAxis); // invoke xAxis function
+
+      }
+
+      
+      // -------------------------------------------------------------------------
+      // Function to parse date and convert date string to float
+      // Function to parse date
+      var parseDate = d3.time.format('%Y-%m-%d').parse // specify date format
+
+      // Function to convert
+      function convertType(d){
+        d['date'] = parseDate(d['date']);
+        d['pickups'] = parseInt(d['pickups']);
+        //console.log(d);
+        return d;
+      } 
+
+      /*
+      var parseDate = d3.time.format('%Y-%m-%d').parse // specify date format
+      function convertType(data){
+        data.forEach(function(d){
+        d['date'] = parseDate(d['date']);
+        d['pickups'] = parseInt(d['pickups']);
+        console.log(d);
+        return d;})
+      }
+      */
+
+
+      // -------------------------------------------------------------------------
+      // Parse *.csv file 
+     
+      d3.csv('data/uber_pickups.csv', convertType, function(error, data){
+
+        // Set x scale domain
+        xScale.domain(d3.extent(data.map(function(d){return d['date'];})));
+        xContextScale.domain(xScale.domain());
+
+        // Set y scale domain
+        yScale.domain([0, d3.max(data.map(function(d){return d['pickups'];}))]);
+        yContextScale.domain(yScale.domain());
+
+        console.log('Max Pickups: ' + d3.max(data.map(function(d){return d['pickups'];})))
+
+        // Focus area path
+        focus.append('path')
+          .datum(data) // Case when enter/exit selection is not computed, then datum is used
+          .attr('class', 'area') // create a css .class selector named 'area'
+          .attr('d', focusArea);
+
+        // Context area path
+        context.append('path')
+          .datum(data) // Case when enter/exit selection is not computed, then datum is used
+          .attr('class', 'area') // create a css .class selector named 'area'
+          .attr('d', contextArea);
+
+        // Focus area axes
+        focus.append('g')
+          .attr('class', 'x axis')
+          .attr('transform', 'translate(0,' + height + ')')
+          .call(xAxis); // invoke axis function
+
+        focus.append('g')
+          .attr('class', 'y axis')
+          .call(yAxis) // invoke axis function
+          .append('text')
+          .attr('transform', 'rotate(-90)')
+          .attr('y', 5)
+          .attr('dy', '0.71em')
+          .style('text-anchor', 'end')
+          .text('Number of Pickups')
+
+        // Context area axes
+        context.append('g')
+          .attr('class', 'x axis')
+          .attr('transform', 'translate(0,' + contextHeight + ')')
+          .call(xContextAxis); // invoke axis function
+
+        // Calling brush
+        context.append('g')
+            .attr('class', 'x brush')
+            .call(brush)
+          .selectAll('rect')
+            .attr('y', 0)
+            .attr('height', contextHeight);
+
+        // Brush instructions
+        context.append('text')
+          .attr('class', 'instructions')
+          .attr('transform', 'translate(0,' + (contextHeight + 45) + ')')
+          .text('Click and drag above to zoom/pan the data')
+          .attr('fill', '#3090C7');
+
+
+      });
+
+    </script>
+		
+  </body>
+</html>
