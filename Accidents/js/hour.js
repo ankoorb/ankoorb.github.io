@@ -54,7 +54,7 @@ svg.append('text')
     .attr('fill', '#3090C7');
 
 // load data and plot
-d3.tsv('data/accident.tsv', function(error, data){
+d3.tsv('data/accidents.tsv', function(error, data){
     if (error) throw error;
 
     // format data: str to date, float, int, etc.
