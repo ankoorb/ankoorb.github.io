@@ -12,7 +12,7 @@ var y = d3.scale.linear()
 
 // Color scale (Hardcoded values and color)
 var color = d3.scale.ordinal()
-    .range(['#e31a1c', '#377eb8', '#4daf4a', '#984ea3'])
+    .range(['#4daf4a', '#e31a1c', '#377eb8', '#984ea3'])
     .domain(["Private", "None", "Community", "Both Private & Community"]);
 
 // Axis
@@ -36,10 +36,10 @@ var svg = d3.select('body')
 
 // Axis group
 var xAxisGroup = svg.append('g')
-    .attr('class', 'x-axis axis')
+    .attr('class', 'x-axis axis');
 
 var yAxisGroup = svg.append('g')
-    .attr('class', 'y-axis axis')
+    .attr('class', 'y-axis axis');
 
 // Initialize tooltip
 var tip = d3.tip().attr('class', 'd3-tip').html(function(d) {
@@ -79,6 +79,7 @@ d3.csv('data/housing.csv', function(error, data){
 
             //console.log(filtered);
 
+            // Hardcoded dwelling type
             if ((selectedValue === 'Single Family - Detached')
                 || (selectedValue === 'Patio Home')
                 || (selectedValue === 'Mfg/Mobile Housing')
@@ -97,10 +98,10 @@ d3.csv('data/housing.csv', function(error, data){
 function renderPlot(filteredData){
 
     // set x axis domain
-    x.domain(d3.extent(filteredData, function(d){return d['ListPrice'];}));
+    x.domain(d3.extent(filteredData, function(d){return d['LivingArea'];}));
 
     // set y axis domain
-    y.domain(d3.extent(filteredData, function(d){return d['LivingArea'];}));
+    y.domain(d3.extent(filteredData, function(d){return d['ListPrice'];}));
 
     // draw x axes
     xAxisGroup = svg.select('.x-axis')
@@ -109,10 +110,11 @@ function renderPlot(filteredData){
 
     // x axis label
     svg.append('text')
-        .attr('text-anchor', 'end')
         .attr('x', width)
         .attr('y', height - 6)
-        .text("List Price in $'s");
+        .style('text-anchor', 'end')
+        .style('font-size', '10px')
+        .text("Area (Sq. Feet)");
 
     // draw y axis
     yAxisGroup = svg.select('.y-axis')
@@ -122,7 +124,7 @@ function renderPlot(filteredData){
         .attr('y', 6)
         .attr('dy', '0.5em')
         .style('text-anchor', 'end')
-        .text('Area (Sq. Feet)')
+        .text("List Price in $'s");
 
     // Draw circles
     var circle = svg.selectAll('circle')
@@ -134,8 +136,8 @@ function renderPlot(filteredData){
 
     // Update
     circle.attr('r', function(d){return d['NumBedrooms'] + 2})
-        .attr('cx', function(d){return x(d['ListPrice'])})
-        .attr('cy', function(d){return y(d['LivingArea'])})
+        .attr('cx', function(d){return x(d['LivingArea'])})
+        .attr('cy', function(d){return y(d['ListPrice'])})
         .style('fill', function(d){if(d['Pool'] === 'None'){return '#e31a1c'}
         else if (d['Pool'] === 'Community'){return '#377eb8'}
         else if (d['Pool'] === 'Private'){return '#4daf4a'}
