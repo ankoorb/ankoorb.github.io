@@ -4,8 +4,8 @@ Reference: http://jsfiddle.net/KjrGF/11/
 
 
 // Define parameters
-var width = 650;
-var height = 600;
+var width = 700;
+var height = 700;
 var outerRadius = Math.min(width, height)/2 - 50;
 var innerRadius = outerRadius - 20;
 
